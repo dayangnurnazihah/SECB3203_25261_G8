@@ -5,6 +5,46 @@ dt=pd.read_csv('survey_lung_cancer.csv')
 pd.set_option('display.max_columns', 16)
 print(dt)
 
+#display first few rows of Dataframe
+print(dt.head())
+
+#check for missing values
+print(dt.isnull())
+
+#count missing values in each column
+print(dt.isnull().sum())
+
+# Shows summary statistics for all numerical columns
+dt.describe()
+
+import matplotlib.pyplot as plt #creating graphs and visualizations
+import seaborn as sns #making advanced and attractive statistical plots
+
+#bar plot for respondent gender
+colors = ['skyblue', 'lightpink']
+dt['GENDER'].value_counts().plot(kind='bar', color=colors)
+plt.title("Gender")
+plt.xlabel("Gender")
+plt.ylabel("Count")
+plt.show()
+
+# Count the Yes/No responses
+counts = dt['LUNG_CANCER'].value_counts()
+
+# Pie chart
+plt.pie(
+    counts, 
+    labels=counts.index,              
+    autopct='%1.1f%%',
+    colors=['lightcoral', 'lightskyblue'],
+    startangle=90,
+    explode=[0.1, 0]
+)
+
+plt.title("Respondents Affected by Lung Cancer")
+plt.axis('equal')
+plt.show()
+
 # Handle missing values
 dt_clean = dt.copy()
 dt_clean = dt_clean.fillna(dt_clean.mode().iloc[0])
