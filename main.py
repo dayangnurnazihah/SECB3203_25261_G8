@@ -81,12 +81,12 @@ dt_clean[num_cols] = scaler_std.fit_transform(dt_clean[num_cols])
 print(dt_clean[num_cols].head())
 
 #Age Binning
-if 'AGE' in dt_clean.columns:
-    dt_clean['AGE_GROUP'] = pd.cut(
+dt_clean['AGE_GROUP'] = pd.cut(
         dt_clean['AGE'],
         bins=[0, 30, 50, 100],
         labels=['Young', 'Adult', 'Senior']
     )
+print(dt)
 
 #Create indicator variables(one-hot encoding)
 dt_final = pd.get_dummies(dt_clean, drop_first=True)
