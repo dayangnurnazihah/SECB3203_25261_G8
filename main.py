@@ -8,14 +8,17 @@ print(dt)
 #display first few rows of Dataframe
 print(dt.head())
 
+#Display information about the DataFrame
+print(dt.info())
+
+# Shows summary statistics for all numerical columns
+dt.describe()
+
 #check for missing values
 print(dt.isnull())
 
 #count missing values in each column
 print(dt.isnull().sum())
-
-# Shows summary statistics for all numerical columns
-dt.describe()
 
 import matplotlib.pyplot as plt #creating graphs and visualizations
 import seaborn as sns #making advanced and attractive statistical plots
