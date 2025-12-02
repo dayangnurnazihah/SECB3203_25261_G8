@@ -65,11 +65,17 @@ for col in yes_no_cols:
 dt_clean = dt_clean.apply(pd.to_numeric, errors='ignore')
 
 #Normalize numerical data (scalling/centering)
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-num_cols = dt_clean.select_dtypes(include=['int64', 'float64']).columns
+# Min-Max Normalization
 scaler = MinMaxScaler()
 dt_clean[num_cols] = scaler.fit_transform(dt_clean[num_cols])
+print(dt_clean[num_cols].head())
+
+# Standardization (Z-score)
+scaler_std = StandardScaler()
+dt_clean[num_cols] = scaler_std.fit_transform(dt_clean[num_cols])
+print(dt_clean[num_cols].head())
 
 #Age Binning
 if 'AGE' in dt_clean.columns:
