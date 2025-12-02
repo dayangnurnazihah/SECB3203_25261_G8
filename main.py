@@ -45,9 +45,10 @@ plt.title("Respondents Affected by Lung Cancer")
 plt.axis('equal')
 plt.show()
 
-# Handle missing values
+# Identify and Handle missing values
 dt_clean = dt.copy()
 dt_clean = dt_clean.fillna(dt_clean.mode().iloc[0])
+dt.isnull().sum()
 
 #Format data (Convert Yes/No to 1/0, fix data types)
 #Convert Yes/No to 1/0
