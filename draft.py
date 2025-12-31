@@ -6,21 +6,18 @@ import seaborn as sns
 from scipy import stats
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, PolynomialFeatures
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
-    mean_squared_error,
-    r2_score,
     accuracy_score,
     roc_auc_score,
     classification_report,
-    precision_recall_fscore_support
+    ConfusionMatrixDisplay
 )
-
 
 # ============================================================
 #region LOAD DATASET
@@ -38,7 +35,6 @@ print(dt.info())
 
 # ============================================================
 #region DESCRIPTIVE STATISTICS 
-# explain why for each description that we use -- eg why we find the mean the std
 # ============================================================
 print("\nDescriptive statistics:")
 print(dt.describe())
@@ -89,7 +85,6 @@ dt_clean = dt_clean.fillna(dt_clean.mode().iloc[0])
 print("\nMissing values after cleaning:")
 print(dt_clean.isnull().sum())
 
-
 yes_no_cols = [col for col in dt_clean.columns if dt_clean[col].dtype == "object"]
 
 for col in yes_no_cols:
@@ -99,7 +94,6 @@ for col in yes_no_cols:
         "Y": 1, "N": 0
     })
 
-# Convert all possible columns to numeric
 dt_clean = dt_clean.apply(pd.to_numeric, errors="ignore")
 
 
@@ -116,7 +110,6 @@ if TARGET_COL in num_cols:
 
 # ============================================================
 # AGE GROUPING 
-# age is a significant variable, which age group
 # ============================================================
 dt_clean["AGE_GROUP"] = pd.cut(
     dt_clean["AGE"],
@@ -128,10 +121,8 @@ print("\nAge group distribution:")
 print(dt_clean["AGE_GROUP"].value_counts())
 
 
-
 # ------------------------------------------------------------
 # GROUPING BY TARGET
-# the statistics for the factors
 # ------------------------------------------------------------
 grouped_stats = dt_clean.groupby(TARGET_COL)[num_cols].agg(["mean", "median", "std"])
 print("\nGrouped statistics by lung cancer outcome:")
@@ -161,7 +152,6 @@ print(anova_df)
 
 # ------------------------------------------------------------
 #region CORRELATION ANALYSIS 
-# identify strong related features
 # ------------------------------------------------------------
 corr_matrix = dt_clean[num_cols + [TARGET_COL]].corr()
 
@@ -210,45 +200,18 @@ preprocessor = ColumnTransformer(
 # TRAIN–TEST SPLIT
 # ------------------------------------------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
+    X,
+    y,
     test_size=0.2,
-    random_state=42
+    random_state=42,
+    stratify=y
 )
 
 
 # ============================================================
-#region LINEAR REGRESSION
+#region LOGISTIC REGRESSION (BASELINE MODEL)
 # ============================================================
 
-linear_model = Pipeline(steps=[
-    ("preprocessor", preprocessor),
-    ("model", LinearRegression())
-])
-
-linear_model.fit(X_train, y_train)
-
-y_train_pred = linear_model.predict(X_train)
-y_test_pred = linear_model.predict(X_test)
-
-print("\nLinear Regression Performance:")
-print("Train R²:", r2_score(y_train, y_train_pred))
-print("Train MSE:", mean_squared_error(y_train, y_train_pred))
-print("Test R²:", r2_score(y_test, y_test_pred))
-print("Test MSE:", mean_squared_error(y_test, y_test_pred))
-
-
-# Visualization
-plt.figure()
-plt.scatter(y_train, y_train_pred)
-plt.xlabel("Actual Values")
-plt.ylabel("Predicted Values")
-plt.title("Linear Regression: Actual vs Predicted (Training Set)")
-plt.show()
-
-
-# ============================================================
-#region LOGISTIC REGRESSION CLASSIFIER
-# ============================================================
 log_reg_model = Pipeline(steps=[
     ("preprocessor", preprocessor),
     ("model", LogisticRegression(
@@ -262,91 +225,73 @@ log_reg_model.fit(X_train, y_train)
 log_test_pred = log_reg_model.predict(X_test)
 log_test_proba = log_reg_model.predict_proba(X_test)[:, 1]
 
-print("\nLogistic Regression (Classification) Performance:")
+print("\nLogistic Regression Performance:")
 print("Accuracy:", accuracy_score(y_test, log_test_pred))
 print("ROC-AUC:", roc_auc_score(y_test, log_test_proba))
 print("\nClassification report:")
 print(classification_report(y_test, log_test_pred))
 
-# Regression-style metrics on probabilities for comparison
-log_r2 = r2_score(y_test, log_test_proba)
-log_mse = mean_squared_error(y_test, log_test_proba)
-
-# Quick threshold sweep to see class 0 vs 1 balance
-thresholds = [0.3, 0.5, 0.7]
-for thr in thresholds:
-    thr_pred = (log_test_proba >= thr).astype(int)
-    prec, rec, f1, _ = precision_recall_fscore_support(y_test, thr_pred, average=None, labels=[0, 1])
-    print(f"\nThreshold {thr:.2f} -> class 0 precision {prec[0]:.2f}, recall {rec[0]:.2f}; class 1 precision {prec[1]:.2f}, recall {rec[1]:.2f}")
-
 
 # ============================================================
-#region POLYNOMIAL REGRESSION WITH PIPELINE
+#region RANDOM FOREST CLASSIFIER (PROPOSED MODEL)
 # ============================================================
-poly_model = Pipeline(steps=[
+rf_model = Pipeline(steps=[
     ("preprocessor", preprocessor),
-    ("poly", PolynomialFeatures(degree=2, include_bias=False)),
-    ("model", LinearRegression())
+    ("model", RandomForestClassifier(
+        n_estimators=300,
+        max_depth=None,
+        class_weight="balanced",
+        random_state=42
+    ))
 ])
 
-poly_model.fit(X_train, y_train)
+rf_model.fit(X_train, y_train)
 
-y_poly_pred = poly_model.predict(X_test)
+rf_test_pred = rf_model.predict(X_test)
+rf_test_proba = rf_model.predict_proba(X_test)[:, 1]
 
-print("\nPolynomial Regression Performance:")
-print("R²:", r2_score(y_test, y_poly_pred))
-print("MSE:", mean_squared_error(y_test, y_poly_pred))
+print("\nRandom Forest Performance:")
+print("Accuracy:", accuracy_score(y_test, rf_test_pred))
+print("ROC-AUC:", roc_auc_score(y_test, rf_test_proba))
+print("\nClassification report:")
+print(classification_report(y_test, rf_test_pred))
 
 
 # ============================================================
 #region MODEL COMPARISON VISUALIZATION
 # ============================================================
-models = ["Linear Regression", "Logistic Regression", "Polynomial Regression"]
-r2_scores = [
-    r2_score(y_test, y_test_pred),
-    log_r2,
-    r2_score(y_test, y_poly_pred)
-]
-
-mse_scores = [
-    mean_squared_error(y_test, y_test_pred),
-    log_mse,
-    mean_squared_error(y_test, y_poly_pred)
+models = ["Logistic Regression", "Random Forest"]
+auc_scores = [
+    roc_auc_score(y_test, log_test_proba),
+    roc_auc_score(y_test, rf_test_proba)
 ]
 
 plt.figure()
-plt.bar(models, r2_scores)
-plt.title("R² Comparison Between Models")
-plt.ylabel("R² Score")
-plt.show()
-
-plt.figure()
-plt.bar(models, mse_scores)
-plt.title("MSE Comparison Between Models")
-plt.ylabel("Mean Squared Error")
+plt.bar(models, auc_scores)
+plt.title("ROC-AUC Comparison Between Models")
+plt.ylabel("ROC-AUC Score")
+plt.ylim(0, 1)
 plt.show()
 
 
+# ============================================================
+#region CONFUSION MATRIX 
+# ============================================================
+ConfusionMatrixDisplay.from_predictions(y_test, rf_test_pred)
+plt.title("Random Forest Confusion Matrix")
+plt.show()
 
 
 # ============================================================
 #region PREDICTION & DECISION MAKING
 # ============================================================
 sample = X_test.iloc[[0]]
-prediction_logreg = log_reg_model.predict(sample)[0]
-prediction_linear = linear_model.predict(sample)[0]
-prediction_poly= poly_model.predict(sample)[0]
 
+risk_probability = rf_model.predict_proba(sample)[0][1]
 
-#test
-print("\nSample Prediction Value (Linear):", prediction_linear)
-print("\nSample Prediction Value (LogReg):", prediction_logreg)
-print("\nSample Prediction Value (Poly):", prediction_poly)
+print("\nPredicted probability of lung cancer:", round(risk_probability, 3))
 
-
-if prediction_linear  >= 0.5:
+if risk_probability >= 0.5:
     print("Decision: High risk of lung cancer")
 else:
     print("Decision: Low risk of lung cancer")
-
-
