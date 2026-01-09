@@ -222,11 +222,6 @@ log_reg_model.fit(X_train, y_train)
 log_test_pred = log_reg_model.predict(X_test)
 log_test_proba = log_reg_model.predict_proba(X_test)[:, 1]
 
-print("\nLogistic Regression Performance:")
-print("Accuracy:", accuracy_score(y_test, log_test_pred))
-print("ROC-AUC:", roc_auc_score(y_test, log_test_proba))
-print("\nClassification report:")
-print(classification_report(y_test, log_test_pred))
 
 
 # ============================================================
@@ -247,28 +242,7 @@ rf_model.fit(X_train, y_train)
 rf_test_pred = rf_model.predict(X_test)
 rf_test_proba = rf_model.predict_proba(X_test)[:, 1]
 
-print("\nRandom Forest Performance:")
-print("Accuracy:", accuracy_score(y_test, rf_test_pred))
-print("ROC-AUC:", roc_auc_score(y_test, rf_test_proba))
-print("\nClassification report:")
-print(classification_report(y_test, rf_test_pred))
 
-
-# ============================================================
-#region MODEL COMPARISON VISUALIZATION
-# ============================================================
-models = ["Logistic Regression", "Random Forest"]
-auc_scores = [
-    roc_auc_score(y_test, log_test_proba),
-    roc_auc_score(y_test, rf_test_proba)
-]
-
-plt.figure()
-plt.bar(models, auc_scores)
-plt.title("ROC-AUC Comparison Between Models")
-plt.ylabel("ROC-AUC Score")
-plt.ylim(0, 1)
-plt.show()
 
 
 # ============================================================
@@ -446,7 +420,7 @@ try:
     best_params = grid_search.best_params_
     
     # ------------------------------------------------------------
-    # MODEL REFINEMENT
+    #region MODEL REFINEMENT
     # ------------------------------------------------------------
     
     from decimal import Decimal, ROUND_HALF_UP
