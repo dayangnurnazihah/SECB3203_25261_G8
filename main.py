@@ -46,38 +46,6 @@ print("\nCount of missing values per column:")
 print(dt.isnull().sum())
 
 
-# Gender distribution
-plt.figure()
-dt["GENDER"].value_counts().plot(
-    kind="bar",
-    color=["skyblue", "lightpink"]
-)
-plt.title("Gender Distribution")
-plt.xlabel("Gender")
-plt.ylabel("Count")
-plt.show()
-
-# Lung cancer distribution
-counts = dt["LUNG_CANCER"].value_counts()
-
-plt.figure()
-plt.pie(
-    counts,
-    labels=counts.index,
-    autopct="%1.1f%%",
-    colors=["lightcoral", "lightskyblue"],
-    startangle=90,
-    explode=[0.1, 0]
-)
-plt.title("Respondents Affected by Lung Cancer")
-plt.axis("equal")
-plt.show()
-
-
-# ============================================================
-#region DATA CLEANING
-# ============================================================
-
 dt_clean = dt.copy()
 
 dt_clean = dt_clean.fillna(dt_clean.mode().iloc[0])
@@ -105,9 +73,34 @@ if TARGET_COL in num_cols:
     num_cols.remove(TARGET_COL)
 
 
-# ============================================================
-# AGE GROUPING 
-# ============================================================
+# Gender distribution
+plt.figure()
+dt_clean["GENDER"].value_counts().plot(
+    kind="bar",
+    color=["skyblue", "lightpink"]
+)
+plt.title("Gender Distribution")
+plt.xlabel("Gender")
+plt.ylabel("Count")
+plt.show()
+
+# Lung cancer distribution
+counts = dt_clean["LUNG_CANCER"].value_counts()
+
+plt.figure()
+plt.pie(
+    counts,
+    labels=counts.index,
+    autopct="%1.1f%%",
+    colors=["lightcoral", "lightskyblue"],
+    startangle=90,
+    explode=[0.1, 0]
+)
+plt.title("Respondents Affected by Lung Cancer")
+plt.axis("equal")
+plt.show()
+
+# Age group distribution
 dt_clean["AGE_GROUP"] = pd.cut(
     dt_clean["AGE"],
     bins=[0, 30, 50, 100],
